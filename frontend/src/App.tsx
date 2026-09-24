@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react'
 import {
-  Activity, BarChart3, Bell, ChevronDown, CircleHelp, Database,
+  Activity, BarChart3, Bell, ChevronDown, CircleHelp, Database, FileUp,
   FileChartColumnIncreasing, Gauge, LayoutDashboard, Newspaper,
   Settings2, Waves,
 } from 'lucide-react'
+import DataWorkbench from './components/DataWorkbench'
+import ForecastWorkbench from './components/ForecastWorkbench'
 
 const navItems = [
   { label: '市场总览', icon: LayoutDashboard },
@@ -12,6 +14,7 @@ const navItems = [
   { label: '预测中心', icon: Waves },
   { label: '模型详情', icon: FileChartColumnIncreasing },
   { label: '新闻与事件', icon: Newspaper },
+  { label: '数据整理', icon: FileUp },
 ]
 
 const pageDetails: Record<string, { endpoint: string; intro: string; sections: string[] }> = {
@@ -21,6 +24,7 @@ const pageDetails: Record<string, { endpoint: string; intro: string; sections: s
   '预测中心': { endpoint: 'forecasts', intro: '按五个时间周期查看经验证的模型结果与历史表现。', sections: ['短期预测 · 5m / 30m / 1D', '中长期预测 · 1M / 3M', '模型选择与主要驱动', '历史验证与不确定性'] },
   '模型详情': { endpoint: 'models', intro: '集中查看模型版本、训练过程、诊断和样本外评估。', sections: ['模型与数据窗口', '真实值与预测值 / Loss', '残差及时域 / 频域诊断', '特征重要性与评估'] },
   '新闻与事件': { endpoint: 'news', intro: '汇总沥青、原油、炼厂、供需、施工与政策资讯。', sections: ['最新资讯', '类别与关联主题', '事件时间线', '来源与更新时间'] },
+  '数据整理': { endpoint: 'datasets', intro: '导入免费的时间序列 CSV，维护来源口径并查看序列图表。', sections: [] },
 }
 
 type ApiStatus = 'loading' | 'connected' | 'unavailable'
@@ -31,17 +35,19 @@ function App() {
   const [dataMessage, setDataMessage] = useState('尚无已验证数据')
 
   useEffect(() => {
-    const base = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8000'
+    const base = (import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8000').replace(/\/$/, '')
+    fetch(`${base}/api/v1/health`)
+      .then((response) => { if (!response.ok) throw new Error('API unavailable'); setApiStatus('connected') })
+      .catch(() => setApiStatus('unavailable'))
     fetch(`${base}/api/v1/${pageDetails[active].endpoint}`)
       .then((response) => {
-        if (!response.ok) throw new Error('API unavailable')
+        if (!response.ok) throw new Error(`该模块暂不可用（${response.status}）`)
         return response.json()
       })
       .then((payload) => {
-        setApiStatus('connected')
-        setDataMessage(payload.message ?? '尚无已验证数据')
+        setDataMessage(payload.message ?? (Array.isArray(payload) ? `已读取 ${payload.length} 个数据集` : '模块已连接'))
       })
-      .catch(() => setApiStatus('unavailable'))
+      .catch((reason: unknown) => setDataMessage(reason instanceof Error ? reason.message : '模块连接失败'))
   }, [active])
 
   return (
@@ -81,7 +87,7 @@ function App() {
             <div className="heading-actions"><button className="secondary-button"><span className="live-dot" />主力合约 <strong>BU — 暂无数据</strong><ChevronDown size={15} /></button><button className="refresh-button" title="数据源接入后启用"><Activity size={16} /> 数据更新</button></div>
           </div>
 
-          {active === '市场总览' ? <>
+          {active === '数据整理' ? <DataWorkbench /> : active === '预测中心' ? <ForecastWorkbench /> : active === '市场总览' ? <>
 
           <section className="notice-banner"><div className="notice-icon"><Database size={17} /></div><div><strong>数据源尚未接入</strong><span>当前为项目基础骨架。接入并验证行情、库存及模型数据后，此处将展示实时研究结果。</span></div><span className="notice-badge">等待配置</span></section>
 

@@ -35,4 +35,24 @@
 - 免费/官方数据源能否稳定提供 BU 分时、5分钟、日线及各合约历史行情。
 - 库存、仓单、产量、开工、贸易、需求与原油数据的定义、更新频率、发布时间、历史深度、授权和缺失情况。
 - 现货价格/基差的可用来源与统一口径；各数据源分别能支持哪些预测周期。
-- 数据库及最终生产技术选型。
+- 数据源许可与数据质量确认；生产部署方式在本机 MVP 完成后再确定。
+
+## 已确认的实施决策（2026-09-24）
+
+- 开发和运行先限定在用户本机；Docker 已安装但当前不作为运行依赖。
+- 数据源优先免费来源。首批导入以时间序列 CSV 为主，可指定时间列、数值列、单位、频率、来源和时区。
+- 采用 PostgreSQL；SQL 是查询语言，不是数据库产品。通过 SQLAlchemy 访问、Alembic 管理结构变更；暂不启用 TimescaleDB 或其他扩展。
+- 单人使用，暂不建立用户、登录或权限体系。
+- 当前使用普通 HTTP/REST API 与前端轮询，不启用 WebSocket/推送。
+- AI解释默认采用 OpenAI GPT-6 Luna Responses API，支持可选网页搜索；预测仍由经验证的量化模型生成，LLM 不生成预测数值。Gemini/Claude 通过 provider 接口预留切换位置，暂不集成。
+- API密钥只通过本机后端环境文件配置，不进入浏览器、数据库或 Git。
+
+## 首批 API 契约范围
+
+- `GET /api/v1/datasets`：列出导入的数据集。
+- `POST /api/v1/datasets/import`：导入 CSV 时间序列。
+- 前端数据整理页：选择 CSV、指定时间列/数值列并录入数据集元信息；导入成功后查询该序列并显示折线图。
+- `GET /api/v1/datasets/{id}`、`/summary`、`/observations`、`/chart`：元信息、范围摘要、数据点及图表序列。
+- `GET /api/v1/forecasts`、`POST /api/v1/forecasts/run`：读取及运行最后观测值基线预测；按时间顺序回测并保存误差指标，样本或频率不足时返回原因。
+- `GET /api/v1/ai/capabilities`、`POST /api/v1/ai/explanations`：AI配置状态及基于已验证上下文的自然语言解释。
+- 预留 `market`、`fundamentals`、`contracts`、`news`、`models` 模块；缺少真实源或模型时返回可识别的空状态。
