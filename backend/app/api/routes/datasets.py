@@ -37,8 +37,14 @@ def _parse_timestamp(raw: str, timezone_name: str) -> datetime:
 
 
 @router.get("", response_model=list[DatasetOut])
-def list_datasets(db: Session = Depends(get_db)) -> list[Dataset]:
-    return list(db.scalars(select(Dataset).order_by(Dataset.imported_at.desc())).all())
+def list_datasets(
+    instrument: str | None = Query(default=None, min_length=2, max_length=30),
+    db: Session = Depends(get_db),
+) -> list[Dataset]:
+    statement = select(Dataset)
+    if instrument:
+        statement = statement.where(Dataset.instrument == instrument.upper())
+    return list(db.scalars(statement.order_by(Dataset.imported_at.desc())).all())
 
 
 @router.get("/{dataset_id}", response_model=DatasetOut)
@@ -182,8 +188,9 @@ async def import_csv(
             insert(TimeSeriesPoint)
             .values(batch)
             .on_conflict_do_nothing(constraint="uq_series_time")
+            .returning(TimeSeriesPoint.id)
         )
-        inserted += result.rowcount or 0
+        inserted += len(result.scalars().all())
     db.commit()
     db.refresh(dataset)
     return DatasetImportResult(

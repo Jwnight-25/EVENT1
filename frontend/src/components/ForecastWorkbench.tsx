@@ -11,7 +11,7 @@ const horizons = [
   { value: '3m', label: '3 个月' },
 ] as const
 
-export default function ForecastWorkbench() {
+export default function ForecastWorkbench({ instrument }: { instrument: string }) {
   const [datasets, setDatasets] = useState<Dataset[]>([])
   const [datasetId, setDatasetId] = useState('')
   const [horizon, setHorizon] = useState<(typeof horizons)[number]['value']>('1d')
@@ -22,11 +22,15 @@ export default function ForecastWorkbench() {
   const [busy, setBusy] = useState(false)
 
   useEffect(() => {
-    listDatasets().then((items) => {
+    setDatasetId('')
+    setRun(null)
+    setPoints([])
+    setHistory(null)
+    listDatasets(instrument).then((items) => {
       setDatasets(items)
       if (items[0]) setDatasetId(String(items[0].id))
     }).catch((reason: unknown) => setError(reason instanceof Error ? reason.message : '数据集读取失败'))
-  }, [])
+  }, [instrument])
 
   const forecastLine = useMemo(() => {
     if (!history?.points.length || !points.length) return ''

@@ -18,7 +18,7 @@ function splitCsvHeader(line: string): string[] {
   return cells
 }
 
-export default function DataWorkbench() {
+export default function DataWorkbench({ instrument }: { instrument: string }) {
   const [datasets, setDatasets] = useState<Dataset[]>([])
   const [selectedId, setSelectedId] = useState<number | null>(null)
   const [series, setSeries] = useState<ChartSeries | null>(null)
@@ -35,19 +35,19 @@ export default function DataWorkbench() {
   const [error, setError] = useState('')
 
   async function refreshDatasets(preferredId?: number) {
-    const items = await listDatasets()
+    const items = await listDatasets(instrument)
     setDatasets(items)
-    const nextId = preferredId ?? selectedId ?? items[0]?.id ?? null
+    const nextId = preferredId ?? items[0]?.id ?? null
     setSelectedId(nextId)
     if (nextId) setSeries(await getChartSeries(nextId))
     else setSeries(null)
   }
 
   useEffect(() => {
+    setSelectedId(null)
+    setSeries(null)
     refreshDatasets().catch((reason: unknown) => setError(reason instanceof Error ? reason.message : '数据集读取失败'))
-  // Initial loading only; subsequent refreshes are triggered by user actions.
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [instrument])
 
   const points = series?.points ?? []
   const plotted = useMemo(() => {
@@ -96,7 +96,7 @@ export default function DataWorkbench() {
     setMessage('')
     try {
       const result = await importTimeSeriesCsv(file, {
-        name, unit, frequency, source_name: sourceName, time_column: timeColumn, value_column: valueColumn,
+        name, instrument, unit, frequency, source_name: sourceName, time_column: timeColumn, value_column: valueColumn,
       })
       await refreshDatasets(result.dataset.id)
       setMessage(`已导入 ${result.rows_imported} 行，跳过重复时间点 ${result.rows_duplicate} 行。`)

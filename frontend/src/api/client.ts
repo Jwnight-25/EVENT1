@@ -20,8 +20,9 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   return response.json() as Promise<T>
 }
 
-export function listDatasets(): Promise<Dataset[]> {
-  return request('/datasets')
+export function listDatasets(instrument?: string): Promise<Dataset[]> {
+  const suffix = instrument ? `?instrument=${encodeURIComponent(instrument)}` : ''
+  return request(`/datasets${suffix}`)
 }
 
 export function getDatasetSummary(datasetId: number): Promise<Record<string, unknown>> {

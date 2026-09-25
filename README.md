@@ -1,6 +1,6 @@
 # 沥青期货智能分析平台
 
-面向 BU（上海期货交易所石油沥青）的本机项目。当前已提供可导航前端、版本化 FastAPI 接口、PostgreSQL 数据层、CSV 时间序列导入与图表、最后观测值基线预测和滚动验证，以及 AI 解释接口。尚未接入自动免费数据源；预测结果明确标注基线模型及验证状态。
+面向多品种时间序列研究的本机项目，首批支持 BU（上海期货交易所石油沥青）和 LC（广州期货交易所碳酸锂）。当前已提供可导航前端、版本化 FastAPI 接口、PostgreSQL 数据层、CSV 时间序列导入与图表、最后观测值基线预测和滚动验证，以及 AI 解释接口。尚未接入自动免费数据源；预测结果明确标注基线模型及验证状态。
 
 ## 技术结构
 
@@ -35,7 +35,7 @@ alembic upgrade head
 uvicorn app.main:app --reload --port 8000
 ```
 
-先在本机 PostgreSQL 中创建 `bitumen_research` 数据库，并在 `.env` 中填入实际用户名和密码。`.env` 不会提交到 Git。数据库尚未配置时，健康检查仍可访问，数据导入和预测记录接口会返回清楚的配置错误。
+本机安装并启动 PostgreSQL 后，创建 `futures_research` 数据库。示例配置采用本机默认账户连接；若你的 PostgreSQL 用户或认证方式不同，请修改 `.env` 中的 `DATABASE_URL`。`.env` 不会提交到 Git。数据库尚未配置时，健康检查仍可访问，数据导入和预测记录接口会返回清楚的配置错误。
 
 API 文档：`http://localhost:8000/docs`。接口清单和 CSV 导入口径见 [`docs/api-contracts.md`](docs/api-contracts.md)。基础接口：
 
@@ -81,10 +81,11 @@ npm run dev
 - 预测价格、概率、区间和模型指标必须来自可验证的模型结果。
 - 使用 `data/data-dictionary-template.csv` 记录字段、单位、频率、来源、观测/发布时间、可用时间、转换规则、质量规则和授权备注。
 - 需求基线：`docs/requirements.md`；完整需求记录：`outputs/期货智能分析平台_需求记录.md`。
-- OpenAI API 是单独计费的云服务，不包含在 ChatGPT 订阅内；配置密钥后，AI 解释和可选网页搜索按实际使用量计费。默认模型为 `gpt-6-luna`。
+- OpenAI API 是单独计费的云服务，不包含在 ChatGPT 订阅内。密钥应仅保存在本地 `backend/.env`，不要提交或发到聊天中。默认 GPT-6 Luna 用于解释已验证的预测结果，可选网页搜索；它不会代替统计模型直接生成可验证预测。
 - 项目需求基线见 [`docs/requirements.md`](docs/requirements.md)。
 - 本次基础底座变更记录见 [`docs/CHANGELOG.md`](docs/CHANGELOG.md)。
+- 逐次功能修改记录见 [`代码修改记录`](代码修改记录/README.md)。
 
 ## 下一步建议
 
-下一步按需求基线调查免费 BU 数据源，完善数据清洗、质量规则和多频率验证；之后可接入移动平均等候选基线及更复杂模型、新闻源和实时推送。
+碳酸锂样本数据说明与导入步骤见 [`data/README.md`](data/README.md)。样本 CSV 保存在本机 `data/raw/`，不会上传到 GitHub。当前需要先安装/启动 PostgreSQL，再运行迁移后导入样本。
