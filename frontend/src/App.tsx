@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react'
 import {
   Activity, BarChart3, Bell, ChevronDown, CircleHelp, Database, FileUp,
-  FileChartColumnIncreasing, Gauge, LayoutDashboard, Newspaper,
+  FileChartColumnIncreasing, LayoutDashboard, Newspaper,
   Settings2, Waves,
 } from 'lucide-react'
 import DataWorkbench from './components/DataWorkbench'
 import ForecastWorkbench from './components/ForecastWorkbench'
+import OverviewWorkbench from './components/OverviewWorkbench'
 
 type InstrumentCode = 'BU' | 'LC'
 
@@ -38,7 +39,7 @@ type ApiStatus = 'loading' | 'connected' | 'unavailable'
 
 function App() {
   const [active, setActive] = useState('市场总览')
-  const [instrument, setInstrument] = useState<InstrumentCode>('BU')
+  const [instrument, setInstrument] = useState<InstrumentCode>('LC')
   const [apiStatus, setApiStatus] = useState<ApiStatus>('loading')
   const [dataMessage, setDataMessage] = useState('尚无已验证数据')
 
@@ -92,58 +93,21 @@ function App() {
         <div className="page-content">
           <div className="page-heading">
             <div><div className="eyebrow">FUTURES · RESEARCH PLATFORM</div><h1>{active}</h1><p>{pageDetails[active].intro}</p></div>
-            <div className="heading-actions"><button className="secondary-button"><span className="live-dot" />主力合约 <strong>{instrument} — 暂无数据</strong><ChevronDown size={15} /></button><button className="refresh-button" title="数据源接入后启用"><Activity size={16} /> 数据更新</button></div>
+            <div className="heading-actions"><button className="secondary-button"><span className="live-dot" />研究品种 <strong>{instrument} · {instruments[instrument].name}</strong><ChevronDown size={15} /></button><button className="refresh-button" title="数据源接入后启用"><Activity size={16} /> 数据更新</button></div>
           </div>
 
-          {active === '数据整理' ? <DataWorkbench instrument={instrument} /> : active === '预测中心' ? <ForecastWorkbench instrument={instrument} /> : active === '市场总览' ? <>
-
-          <section className="notice-banner"><div className="notice-icon"><Database size={17} /></div><div><strong>数据源尚未接入</strong><span>当前为项目基础骨架。接入并验证行情、库存及模型数据后，此处将展示当前品种的研究结果。</span></div><span className="notice-badge">等待配置</span></section>
-
-          <section className="metric-grid">
-            <Metric label="主力合约价格" unit={instrument} icon={<Gauge size={17} />} />
-            <Metric label="现货与基差" unit="现货 − 期货" icon={<Activity size={17} />} />
-            <Metric label="总库存" unit="最新发布值" icon={<Database size={17} />} />
-            <Metric label="预测信号" unit="5 个周期" icon={<Waves size={17} />} />
-          </section>
-
-          <section className="content-grid">
-            <article className="panel chart-panel">
-              <div className="panel-heading"><div><h2>主力合约行情</h2><p>价格走势 · 日线</p></div><button className="period-select">日线 <ChevronDown size={14} /></button></div>
-              <EmptyChart instrument={instrument} />
-              <div className="chart-legend"><span><i className="legend-line" />{instrument} 主力</span><span className="muted">数据源接入后展示</span></div>
-            </article>
-            <article className="panel forecast-panel">
-              <div className="panel-heading"><div><h2>多周期预测</h2><p>模型结果与历史验证表现</p></div><button className="text-button" onClick={() => setActive('预测中心')}>查看详情 <span>→</span></button></div>
-              <div className="forecast-list">{['5 分钟', '30 分钟', '1 天', '1 个月', '3 个月'].map((period) => <div className="forecast-row" key={period}><span className="period-name">{period}</span><span className="forecast-empty">等待模型数据</span><span className="signal-chip">—</span></div>)}</div>
-              <div className="panel-footnote">预测方向、价格区间与置信信息仅在模型输出可验证时展示。</div>
-            </article>
-          </section>
-
-          <section className="lower-grid">
-            <article className="panel lower-panel"><div className="panel-heading"><div><h2>库存概览</h2><p>全国与区域库存 · 按数据源发布频率更新</p></div><button className="text-button" onClick={() => setActive('基本面 Profile')}>基本面 <span>→</span></button></div><EmptyStrip icon={<Database size={19} />} label="尚无库存数据" detail="接入当前品种库存来源后展示总量、区域分布与周度变化。" /></article>
-            <article className="panel lower-panel"><div className="panel-heading"><div><h2>近期资讯</h2><p>产业链 · 供需与政策</p></div><button className="text-button" onClick={() => setActive('新闻与事件')}>更多资讯 <span>→</span></button></div><EmptyStrip icon={<Newspaper size={19} />} label="尚无资讯数据" detail="接入资讯来源后按发布时间倒序展示。" /></article>
-          </section>
-
-          </> : <>
+          {active === '数据整理' ? <DataWorkbench instrument={instrument} /> : active === '预测中心' ? <ForecastWorkbench instrument={instrument} /> : active === '市场总览' ? <OverviewWorkbench instrument={instrument} onOpenData={() => setActive('数据整理')} onOpenForecast={() => setActive('预测中心')} /> : <>
             <section className="notice-banner"><div className="notice-icon"><Database size={17} /></div><div><strong>该模块已建立，数据源尚未接入</strong><span>{dataMessage}。当前页面不展示模拟市场数据。</span></div><span className="notice-badge">等待配置</span></section>
             <section className="module-grid">
               {pageDetails[active].sections.map((section) => <article className="panel module-card" key={section}><div className="panel-heading"><div><h2>{section}</h2><p>{instrument} {instruments[instrument].name} · 数据接入后展示</p></div><span className="unavailable-label">数据暂缺</span></div><EmptyStrip icon={<Database size={19} />} label="等待可验证数据" detail="接入数据来源并完成口径、时间戳与质量校验后启用。" /></article>)}
             </section>
           </>}
 
-          <footer className="page-footer"><span><span className={`status-dot ${apiStatus === 'connected' ? 'connected' : 'disconnected'}`} />{apiStatus === 'connected' ? 'API 服务已连接' : 'API 服务未连接'}</span><span>{instrument} {instruments[instrument].name} · 数据更新时间：—</span><span>演示环境不会显示模拟市场数值</span></footer>
+          <footer className="page-footer"><span><span className={`status-dot ${apiStatus === 'connected' ? 'connected' : 'disconnected'}`} />{apiStatus === 'connected' ? 'API 服务已连接' : 'API 服务未连接'}</span><span>{instrument} {instruments[instrument].name} · 本地数据库</span><span>演示环境不会显示模拟市场数值</span></footer>
         </div>
       </main>
     </div>
   )
-}
-
-function Metric({ label, unit, icon }: { label: string; unit: string; icon: React.ReactNode }) {
-  return <article className="metric-card"><div className="metric-top"><span>{label}</span><span className="metric-icon">{icon}</span></div><div className="metric-value">—</div><div className="metric-bottom"><span>{unit}</span><span className="unavailable-label">数据暂缺</span></div></article>
-}
-
-function EmptyChart({ instrument }: { instrument: InstrumentCode }) {
-  return <div className="empty-chart"><div className="chart-grid-lines"><i /><i /><i /><i /></div><div className="chart-empty-message"><div className="chart-empty-icon"><BarChart3 size={20} /></div><strong>等待接入行情数据</strong><span>此图表将在当前品种行情数据接入后生成</span></div><div className="axis-labels"><span>—</span><span>—</span><span>—</span><span>—</span><span>—</span></div></div>
 }
 
 function EmptyStrip({ icon, label, detail }: { icon: React.ReactNode; label: string; detail: string }) {
